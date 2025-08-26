@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub音乐播放器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            margin-top: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            color: #ddd;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+        
+        .setup-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 1rem;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #1a2a6c, #b21f1f);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        .player {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .now-playing {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .album-art {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        
+        .track-info {
+            flex: 1;
+        }
+        
+        .track-title {
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+        }
+        
+        .track-artist {
+            color: #bbb;
+            font-size: 1.1rem;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .ctrl-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        
+        .play-btn {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+            cursor: pointer;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(to right, #ff9a9e, #fad0c4);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+        
+        .time {
+            display: flex;
+            justify-content: space-between;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+        
+        .playlist {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.4);
+        }
+        
+        .playlist::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .playlist::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        
+        .playlist-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .playlist-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .playlist-item.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .playlist-item-number {
+            width: 25px;
+            text-align: center;
+            color: #bbb;
+        }
+        
+        .playlist-item-title {
+            flex: 1;
+        }
+        
+        .playlist-item-duration {
+            color: #bbb;
+            padding: 0 10px;
+        }
+        
+        .mode-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .mode-btn {
+            padding: 8px 15px;
+            border-radius: 20px;
+            width: auto;
+            font-size: 0.9rem;
+        }
+        
+        .mode-btn.active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 25px;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #ff9a9e;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+            line-height: 1.6;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .github-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .success-message {
+            background: rgba(46, 204, 113, 0.2);
+            border-left: 4px solid #2ecc71;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .now-playing {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .controls {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GitHub音乐播放器</h1>
+            <p class="subtitle">使用GitHub和jsDelivr托管和播放您的音乐</p>
+        </header>
+
+        <div class="setup-section">
+            <div class="input-group">
+                <label for="github-username">GitHub用户名</label>
+                <input type="text" id="github-username" placeholder="例如: yourusername">
+            </div>
+            
+            <div class="input-group">
+                <label for="repo-name">仓库名称</label>
+                <input type="text" id="repo-name" placeholder="例如: my-music">
+            </div>
+            
+            <div class="input-group">
+                <label for="branch-name">分支名称 (默认为main)</label>
+                <input type="text" id="branch-name" placeholder="例如: main" value="main">
+            </div>
+            
+            <div class="input-group">
+                <label for="folder-path">音乐文件夹路径 (可选)</label>
+                <input type="text" id="folder-path" placeholder="例如: music/">
+            </div>
+            
+            <button onclick="loadPlaylist()">
+                <i class="fas fa-cloud-download-alt"></i> 加载播放列表
+            </button>
+            
+            <div id="success-message" class="success-message">
+                <i class="fas fa-check-circle"></i> 播放列表加载成功！
+            </div>
+        </div>
+
+        <div class="player">
+            <div class="now-playing">
+                <div class="album-art">🎵</div>
+                <div class="track-info">
+                    <div class="track-title">未选择歌曲</div>
+                    <div class="track-artist">未知艺术家</div>
+                </div>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress"></div>
+            </div>
+
+            <div class="time">
+                <span id="current-time">0:00</span>
+                <span id="total-time">0:00</span>
+            </div>
+
+            <div class="controls">
+                <button class="ctrl-btn" id="shuffle-btn" onclick="toggleRandom()" title="随机播放">
+                    <i class="fas fa-random"></i>
+                </button>
+                <button class="ctrl-btn" onclick="prevSong()" title="上一首">
+                    <i class="fas fa-step-backward"></i>
+                </button>
+                <button class="ctrl-btn play-btn" id="play-btn" onclick="togglePlay()" title="播放">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="ctrl-btn" onclick="nextSong()" title="下一首">
+                    <i class="fas fa-step-forward"></i>
+                </button>
+                <button class="ctrl-btn" id="repeat-btn" onclick="toggleRepeat()" title="单曲循环">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+
+            <div class="mode-controls">
+                <button class="mode-btn" onclick="toggleAutoPlay()" id="autoplay-btn">
+                    <i class="fas fa-play-circle"></i> 自动播放
+                </button>
+            </div>
+
+            <div class="playlist" id="playlist-container">
+                <div class="playlist-item">
+                    <div class="playlist-item-number">1</div>
+                    <div class="playlist-item-title">示例歌曲 1</div>
+                    <div class="playlist-item-duration">3:45</div>
+                </div>
+                <div class="playlist-item">
+                    <div class="playlist-item-number">2</div>
+                    <div class="playlist-item-title">示例歌曲 2</div>
+                    <div class="playlist-item-duration">4:20</div>
+                </div>
+                <div class="playlist-item">
+                    <div class="playlist-item-number">3</div>
+                    <div class="playlist-item-title">示例歌曲 3</div>
+                    <div class="playlist-item-duration">2:55</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>使用说明</h3>
+            <ol>
+                <li>将您的音乐文件上传到GitHub仓库</li>
+                <li>在上方输入框中填写GitHub用户名、仓库名称等信息</li>
+                <li>点击"加载播放列表"按钮</li>
+                <li>播放列表将自动生成，点击歌曲即可播放</li>
+                <li>使用控制按钮控制播放：播放/暂停、上一首、下一首等</li>
+            </ol>
+            
+            <div class="github-info">
+                <h4>GitHub + jsDelivr URL格式:</h4>
+                <p>https://cdn.jsdelivr.net/gh/用户名/仓库名@分支/文件路径</p>
+                <p>例如: https://cdn.jsdelivr.net/gh/johndoe/music@main/song1.mp3</p>
+                
+                <h4>部署到GitHub Pages:</h4>
+                <ol>
+                    <li>在GitHub上创建新仓库</li>
+                    <li>将本HTML文件保存为index.html并上传到仓库</li>
+                    <li>上传您的MP3文件到仓库</li>
+                    <li>转到仓库Settings → Pages → 选择main分支 → Save</li>
+                    <li>等待几分钟后，您的播放器就可以通过https://用户名.github.io/仓库名 访问了</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let audio;
+        let songs = [];
+        let currentIndex = 0;
+        let isPlaying = false;
+        let isRandom = false;
+        let isRepeat = false;
+        let isAutoPlay = true;
+
+        // 初始化播放器
+        function initPlayer() {
+            audio = new Audio();
+            setupAudioEventListeners();
+            
+            // 示例歌曲
+            songs = [
+                {
+                    title: "示例歌曲 1",
+                    file: "https://cdn.jsdelivr.net/gh/johndoe/music@main/song1.mp3",
+                    duration: 225
+                },
+                {
+                    title: "示例歌曲 2",
+                    file: "https://cdn.jsdelivr.net/gh/johndoe/music@main/song2.mp3",
+                    duration: 260
+                },
+                {
+                    title: "示例歌曲 3",
+                    file: "https://cdn.jsdelivr.net/gh/johndoe/music@main/song3.mp3",
+                    duration: 175
+                }
+            ];
+            
+            renderPlaylist();
+        }
+
+        // 设置音频事件监听器
+        function setupAudioEventListeners() {
+            audio.addEventListener('timeupdate', updateProgress);
+            audio.addEventListener('ended', nextSong);
+            audio.addEventListener('loadedmetadata', function() {
+                document.getElementById('total-time').textContent = formatTime(audio.duration);
+            });
+        }
+
+        // 从GitHub加载播放列表
+        function loadPlaylist() {
+            const username = document.getElementById('github-username').value;
+            const repo = document.getElementById('repo-name').value;
+            const branch = document.getElementById('branch-name').value || 'main';
+            const folder = document.getElementById('folder-path').value || '';
+            
+            if (!username || !repo) {
+                alert('请输入GitHub用户名和仓库名称');
+                return;
+            }
+            
+            // 在实际应用中，这里应该通过GitHub API获取文件列表
+            // 由于是演示，我们假设用户知道文件名
+            songs = [
+                {
+                    title: "我的歌曲 1",
+                    file: `https://cdn.jsdelivr.net/gh/${username}/${repo}@${branch}/${folder}song1.mp3`,
+                    duration: 0
+                },
+                {
+                    title: "我的歌曲 2",
+                    file: `https://cdn.jsdelivr.net/gh/${username}/${repo}@${branch}/${folder}song2.mp3`,
+                    duration: 0
+                },
+                {
+                    title: "我的歌曲 3",
+                    file: `https://cdn.jsdelivr.net/gh/${username}/${repo}@${branch}/${folder}song3.mp3`,
+                    duration: 0
+                }
+            ];
+            
+            renderPlaylist();
+            
+            // 显示成功消息
+            const successMsg = document.getElementById('success-message');
+            successMsg.style.display = 'block';
+            successMsg.innerHTML = `<i class="fas fa-check-circle"></i> 播放列表已加载！使用格式: https://cdn.jsdelivr.net/gh/${username}/${repo}@${branch}/${folder}文件名.mp3`;
+            
+            // 5秒后隐藏消息
+            setTimeout(() => {
+                successMsg.style.display = 'none';
+            }, 5000);
+        }
+
+        // 渲染播放列表
+        function renderPlaylist() {
+            const playlistContainer = document.getElementById('playlist-container');
+            playlistContainer.innerHTML = '';
+            
+            songs.forEach((song, index) => {
+                const item = document.createElement('div');
+                item.className = 'playlist-item';
+                if (index === currentIndex) item.classList.add('active');
+                
+                item.innerHTML = `
+                    <div class="playlist-item-number">${index + 1}</div>
+                    <div class="playlist-item-title">${song.title}</div>
+                    <div class="playlist-item-duration">${formatTime(song.duration)}</div>
+                `;
+                
+                item.addEventListener('click', () => playSong(index));
+                playlistContainer.appendChild(item);
+            });
+        }
+
+        // 播放歌曲
+        function playSong(index) {
+            if (index >= 0 && index < songs.length) {
+                currentIndex = index;
+                const song = songs[currentIndex];
+                
+                audio.src = song.file;
+                audio.play();
+                
+                updatePlayerInfo(song);
+                updatePlaylistHighlight();
+                isPlaying = true;
+                updatePlayButton();
+            }
+        }
+
+        // 更新播放器信息
+        function updatePlayerInfo(song) {
+            document.querySelector('.track-title').textContent = song.title;
+            document.querySelector('.track-artist').textContent = "未知艺术家";
+        }
+
+        // 更新播放列表高亮
+        function updatePlaylistHighlight() {
+            const items = document.querySelectorAll('.playlist-item');
+            items.forEach((item, index) => {
+                if (index === currentIndex) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        // 切换播放/暂停
+        function togglePlay() {
+            if (songs.length === 0) return;
+            
+            if (audio.paused) {
+                if (!audio.src) {
+                    playSong(0);
+                } else {
+                    audio.play();
+                }
+                isPlaying = true;
+            } else {
+                audio.pause();
+                isPlaying = false;
+            }
+            
+            updatePlayButton();
+        }
+
+        // 更新播放按钮
+        function updatePlayButton() {
+            const playBtn = document.getElementById('play-btn');
+            if (isPlaying) {
+                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                playBtn.title = '暂停';
+            } else {
+                playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                playBtn.title = '播放';
+            }
+        }
+
+        // 下一首
+        function nextSong() {
+            if (songs.length === 0) return;
+            
+            if (isRandom) {
+                let newIndex;
+                do {
+                    newIndex = Math.floor(Math.random() * songs.length);
+                } while (newIndex === currentIndex && songs.length > 1);
+                
+                playSong(newIndex);
+            } else {
+                const nextIndex = (currentIndex + 1) % songs.length;
+                playSong(nextIndex);
+            }
+        }
+
+        // 上一首
+        function prevSong() {
+            if (songs.length === 0) return;
+            
+            const prevIndex = (currentIndex - 1 + songs.length) % songs.length;
+            playSong(prevIndex);
+        }
+
+        // 切换随机播放
+        function toggleRandom() {
+            isRandom = !isRandom;
+            const shuffleBtn = document.getElementById('shuffle-btn');
+            shuffleBtn.style.background = isRandom ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)';
+        }
+
+        // 切换单曲循环
+        function toggleRepeat() {
+            isRepeat = !isRepeat;
+            const repeatBtn = document.getElementById('repeat-btn');
+            repeatBtn.style.background = isRepeat ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)';
+            audio.loop = isRepeat;
+        }
+
+        // 切换自动播放
+        function toggleAutoPlay() {
+            isAutoPlay = !isAutoPlay;
+            const autoplayBtn = document.getElementById('autoplay-btn');
+            autoplayBtn.style.background = isAutoPlay ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)';
+        }
+
+        // 更新进度条
+        function updateProgress() {
+            const progress = document.querySelector('.progress');
+            const currentTimeElem = document.getElementById('current-time');
+            
+            if (audio.duration) {
+                const progressPercent = (audio.currentTime / audio.duration) * 100;
+                progress.style.width = `${progressPercent}%`;
+                currentTimeElem.textContent = formatTime(audio.currentTime);
+            }
+        }
+
+        // 格式化时间
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds === 0) return "0:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        // 点击进度条跳转
+        document.querySelector('.progress-container').addEventListener('click', function(e) {
+            if (!audio.duration) return;
+            
+            const width = this.clientWidth;
+            const clickX = e.offsetX;
+            const duration = audio.duration;
+            
+            audio.currentTime = (clickX / width) * duration;
+        });
+
+        // 初始化播放器
+        window.onload = initPlayer;
+    </script>
+</body>
+</html>
