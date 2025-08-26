@@ -325,6 +325,20 @@
             display: none;
         }
         
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
         @media (max-width: 600px) {
             .container {
                 padding: 15px;
@@ -506,6 +520,7 @@ audio/song2.mp3"></textarea>
 
         // 初始化播放器
         function initPlayer() {
+            // 创建新的Audio对象
             audio = new Audio();
             setupAudioEventListeners();
             
@@ -529,10 +544,27 @@ audio/song2.mp3"></textarea>
         // 设置音频事件监听器
         function setupAudioEventListeners() {
             audio.addEventListener('timeupdate', updateProgress);
-            audio.addEventListener('ended', nextSong);
+            audio.addEventListener('ended', handleSongEnd);
             audio.addEventListener('loadedmetadata', function() {
                 document.getElementById('total-time').textContent = formatTime(audio.duration);
             });
+            audio.addEventListener('error', function(e) {
+                console.error('音频加载错误:', e);
+                showError('音频加载失败，请检查URL或网络连接');
+            });
+            audio.addEventListener('canplay', function() {
+                console.log('音频可以播放了');
+            });
+        }
+
+        // 处理歌曲结束
+        function handleSongEnd() {
+            if (isRepeat) {
+                audio.currentTime = 0;
+                audio.play();
+            } else {
+                nextSong();
+            }
         }
 
         // 从GitHub加载播放列表
@@ -563,6 +595,12 @@ audio/song2.mp3"></textarea>
                 return;
             }
             
+            // 显示加载中状态
+            const loadBtn = document.querySelector('.button-group button:first-child');
+            const originalHtml = loadBtn.innerHTML;
+            loadBtn.innerHTML = '<span class="loading"></span> 加载中...';
+            loadBtn.disabled = true;
+            
             // 创建歌曲列表
             songs = [];
             for (let i = 0; i < songNames.length; i++) {
@@ -576,10 +614,38 @@ audio/song2.mp3"></textarea>
                 });
             }
             
-            renderPlaylist();
-            
-            // 显示成功消息
-            showSuccess(`成功加载 ${songs.length} 首歌曲！`);
+            // 预加载第一首歌曲以测试可用性
+            testAudioSource(songs[0].file)
+                .then(() => {
+                    renderPlaylist();
+                    showSuccess(`成功加载 ${songs.length} 首歌曲！`);
+                    loadBtn.innerHTML = originalHtml;
+                    loadBtn.disabled = false;
+                })
+                .catch(error => {
+                    showError(`音频加载失败: ${error}`);
+                    loadBtn.innerHTML = originalHtml;
+                    loadBtn.disabled = false;
+                });
+        }
+
+        // 测试音频源是否可用
+        function testAudioSource(url) {
+            return new Promise((resolve, reject) => {
+                const testAudio = new Audio();
+                testAudio.preload = 'metadata';
+                
+                testAudio.addEventListener('loadedmetadata', function() {
+                    resolve();
+                });
+                
+                testAudio.addEventListener('error', function(e) {
+                    reject('无法加载音频，请检查URL是否正确');
+                });
+                
+                testAudio.src = url;
+                testAudio.load();
+            });
         }
 
         // 添加示例歌曲
@@ -662,13 +728,25 @@ audio/song2.mp3"></textarea>
                 currentIndex = index;
                 const song = songs[currentIndex];
                 
-                audio.src = song.file;
-                audio.play();
+                // 先暂停当前播放
+                audio.pause();
                 
-                updatePlayerInfo(song);
-                updatePlaylistHighlight();
-                isPlaying = true;
-                updatePlayButton();
+                // 设置新的音频源
+                audio.src = song.file;
+                
+                // 预加载音频
+                audio.load();
+                
+                // 播放音频
+                audio.play().then(() => {
+                    updatePlayerInfo(song);
+                    updatePlaylistHighlight();
+                    isPlaying = true;
+                    updatePlayButton();
+                }).catch(error => {
+                    console.error('播放失败:', error);
+                    showError('播放失败，请检查音频文件或网络连接');
+                });
             }
         }
 
@@ -692,21 +770,29 @@ audio/song2.mp3"></textarea>
 
         // 切换播放/暂停
         function togglePlay() {
-            if (songs.length === 0) return;
+            if (songs.length === 0) {
+                showError('请先加载播放列表');
+                return;
+            }
             
             if (audio.paused) {
                 if (!audio.src) {
+                    // 如果没有设置音频源，播放第一首歌
                     playSong(0);
                 } else {
-                    audio.play();
+                    audio.play().then(() => {
+                        isPlaying = true;
+                        updatePlayButton();
+                    }).catch(error => {
+                        console.error('播放失败:', error);
+                        showError('播放失败: ' + error.message);
+                    });
                 }
-                isPlaying = true;
             } else {
                 audio.pause();
                 isPlaying = false;
+                updatePlayButton();
             }
-            
-            updatePlayButton();
         }
 
         // 更新播放按钮
